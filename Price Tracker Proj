@@ -1,0 +1,77 @@
+import requests
+import smtplib
+from bs4 import BeautifulSoup
+from twilio.rest import Client
+import config
+
+
+url = "https://www.amazon.com/Bose-Noise-Cancelling-Headphones-Black/dp/B07Q9MJKBV/ref=sr_1_3?crid=J9T2YRCFM02&keywords=bose+700&qid=1566102979&s=electronics&sprefix=bose+700%2Celectronics%2C132&sr=1-3"  # link to item (in this case, Bose 700 Headphones)
+headers = {"User_Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36"}  # header allows us to think the server into not thinking a bot is sending the requests, but the brower itself.
+
+
+def check_price():  # functions that checks if the price falls beneath the threshold we set.
+
+    page = requests.get(url, headers=headers)
+    soup1 = BeautifulSoup(page.content, "html.parser")
+    soup2 = BeautifulSoup(soup1.prettify(), "html.parser")    # soup2 is created to ensure that no problems occur when working with Amazon. It also makes the printout more readable.
+
+    title = soup2.find(id="productTitle").get_text()  # finds product's name
+    price = soup2.find(id="priceblock_ourprice").get_text()  # find's product's price
+
+    price_2 = price.strip()  # eliminates white space from price
+
+    converted_price = float(price_2[1:])  # converts the price string into a float.
+
+    print("Product Name:", title.strip())  # eliminates whitespace from product name.
+    print("Product Price:", converted_price)
+
+    if converted_price < 200:  # 200 = defined threshold
+        send_mail()  # if the price goes below the threshold (200), the user will be sent an email.
+        send_text()
+
+
+def send_mail():  # function that sends the email notifying the user
+
+    server = smtplib.SMTP("smtp.gmail.com", 587)  # initializes the smtp server
+    server.ehlo()  # greets server
+    server.starttls()  # encrypts connection
+    server.ehlo()
+
+    server.login("steventhomas6160@gmail.com", config.password)  # logs into the server
+    subject = "Price fell down!"
+    body = """
+    Check the Link!
+    https://www.amazon.com/Bose-Noise-Cancelling-Headphones-Black/dp/B07Q9MJKBV/ref=sr_1_3?crid=J9T2YRCFM02&keywords=bose+700&qid=1566102979&s=electronics&sprefix=bose+700%2Celectronics%2C132&sr=1-3
+    """
+
+    message = f"Subject: {subject}\n\n{body}"
+
+    server.sendmail(
+        config.email_1,  # sender
+        config.email_2,
+        message
+    )
+
+    print("EMAIL HAS BEEN SENT")
+    server.quit()
+
+
+def send_text():
+    client = Client(config.account_sid, config.auth_token)
+
+    text_msg = client.messages.create(
+        from_=config.twilio_number,
+        body="""
+           Price fell down! Check the Amazon Link: https://www.amazon.com/Bose-Noise-Cancelling-Headphones-Black/dp/B07Q9MJKBV/ref=sr_1_3?crid=J9T2YRCFM02&keywords=bose+700&qid=1566102979&s=electronics&sprefix=bose+700%2Celectronics%2C132&sr=1-3
+           """,
+        to=config.phone_number,
+
+
+    )
+    print(text_msg.date_sent)  # prints the date of when the text message was sent
+
+
+
+
+
+check_price()
