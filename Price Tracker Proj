@@ -27,7 +27,7 @@ def check_price():  # functions that checks if the price falls beneath the thres
 
     if converted_price < 200:  # 200 = defined threshold
         send_mail()  # if the price goes below the threshold (200), the user will be sent an email.
-        send_text()
+        send_text()  # if the price goes below the threshold (200), the user will be sent a text message.
 
 
 def send_mail():  # function that sends the email notifying the user
